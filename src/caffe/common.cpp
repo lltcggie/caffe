@@ -1,13 +1,17 @@
 #include <glog/logging.h>
+#include <process.h>
 #include <cstdio>
 #include <ctime>
 
 #include "caffe/common.hpp"
+#include "caffe/layer_factory.hpp"
 #include "caffe/util/rng.hpp"
 
 namespace caffe {
 
 shared_ptr<Caffe> Caffe::singleton_;
+
+void RegisterLayers();
 
 // random seeding
 int64_t cluster_seedgen(void) {
@@ -35,8 +39,14 @@ void GlobalInit(int* pargc, char*** pargv) {
   ::gflags::ParseCommandLineFlags(pargc, pargv, true);
   // Google logging.
   ::google::InitGoogleLogging(*(pargv)[0]);
+
+  // Windows not support ::google::InstallFailureSignalHandler()
+#ifndef WIN32
   // Provide a backtrace on segfault.
   ::google::InstallFailureSignalHandler();
+#endif
+
+  RegisterLayers();
 }
 
 #ifdef CPU_ONLY  // CPU-only Caffe.

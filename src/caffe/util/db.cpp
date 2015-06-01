@@ -3,6 +3,12 @@
 #include <sys/stat.h>
 #include <string>
 
+// port for Win32
+#ifdef _MSC_VER
+#include <direct.h>
+#define mkdir(a, b) mkdir(a)
+#endif
+
 namespace caffe { namespace db {
 
 const size_t LMDB_MAP_SIZE = 1099511627776;  // 1 TB

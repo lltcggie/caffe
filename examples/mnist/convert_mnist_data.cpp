@@ -20,6 +20,12 @@
 
 #include "caffe/proto/caffe.pb.h"
 
+#ifdef _WIN32
+#include <direct.h>
+#define mkdir(a,b) _mkdir(a)
+#define snprintf _snprintf
+#endif
+
 using namespace caffe;  // NOLINT(build/namespaces)
 using std::string;
 

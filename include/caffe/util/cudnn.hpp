@@ -14,6 +14,7 @@
       << cudnnGetErrorString(status); \
   } while (0)
 
+/*
 inline const char* cudnnGetErrorString(cudnnStatus_t status) {
   switch (status) {
     case CUDNN_STATUS_SUCCESS:
@@ -41,6 +42,7 @@ inline const char* cudnnGetErrorString(cudnnStatus_t status) {
   }
   return "Unknown cudnn status";
 }
+*/
 
 namespace caffe {
 
