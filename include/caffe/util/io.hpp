@@ -7,11 +7,14 @@
 #include "google/protobuf/message.h"
 #include "hdf5.h"
 #include "hdf5_hl.h"
-#include "mkstemp.h"
 
 #include "caffe/blob.hpp"
 #include "caffe/common.hpp"
 #include "caffe/proto/caffe.pb.h"
+
+#ifdef _MSC_VER
+#include "mkstemp.h"
+#endif
 
 #define HDF5_NUM_DIMS 4
 
