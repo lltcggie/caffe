@@ -1,7 +1,10 @@
 #include <glog/logging.h>
-#include <process.h>
 #include <cstdio>
 #include <ctime>
+
+#ifdef _MSC_VER
+#include <process.h>
+#endif
 
 #include "caffe/common.hpp"
 #include "caffe/layer_factory.hpp"
