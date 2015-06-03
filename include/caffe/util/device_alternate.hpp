@@ -86,7 +86,14 @@ const int CAFFE_CUDA_NUM_THREADS = 512;
 
 // CUDA: number of blocks for threads.
 inline int CAFFE_GET_BLOCKS(const int N) {
+#if __CUDA_ARCH__ >= 300
   return (N + CAFFE_CUDA_NUM_THREADS - 1) / CAFFE_CUDA_NUM_THREADS;
+#else
+	const int blocks = (N + CAFFE_CUDA_NUM_THREADS - 1) / CAFFE_CUDA_NUM_THREADS;
+	if (blocks > 65535) // http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#features-and-technical-specifications
+		return 65535;
+	return blocks;
+#endif
 }
 
 }  // namespace caffe
