@@ -9,18 +9,18 @@ Windowsの場合は「msvc」フォルダ内に入っている「caffe.sln」で
 # Ubuntu
 Ubuntu 15.04 AMD64でビルドしたときの手順は以下の通り
 
-sudo apt-get update
-sudo apt-get upgrade
+sudo apt-get update  
+sudo apt-get upgrade  
 
-sudo apt-get install libprotobuf-dev libleveldb-dev libsnappy-dev libopencv-dev libboost-all-dev libhdf5-serial-dev
-sudo apt-get install libatlas-base-dev
-sudo apt-get install libgflags-dev libgoogle-glog-dev liblmdb-dev protobuf-compiler
-sudo apt-get install nvidia-cuda-toolkit
+sudo apt-get install libprotobuf-dev libleveldb-dev libsnappy-dev libopencv-dev libboost-all-dev libhdf5-serial-dev  
+sudo apt-get install libatlas-base-dev  
+sudo apt-get install libgflags-dev libgoogle-glog-dev liblmdb-dev protobuf-compiler  
+sudo apt-get install nvidia-cuda-toolkit  
 sudo apt-get install git
 
 git clone https://github.com/BVLC/caffe.git
 
-cd caffe
+cd caffe  
 cp Makefile.config.example Makefile.config
 
 Makefile.configを以下のように編集
