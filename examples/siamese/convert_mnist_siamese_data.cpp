@@ -19,6 +19,8 @@
 #ifdef USE_LEVELDB
 #include "leveldb/db.h"
 
+#include "caffe/util/msvc.hpp"
+
 uint32_t swap_endian(uint32_t val) {
     val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
     return (val << 16) | (val >> 16);
@@ -123,6 +125,8 @@ int main(int argc, char** argv) {
   return 0;
 }
 #else
+#include "caffe/util/msvc.hpp"
+
 int main(int argc, char** argv) {
   LOG(FATAL) << "This example requires LevelDB; compile with USE_LEVELDB.";
 }
