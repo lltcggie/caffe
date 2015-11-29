@@ -2,6 +2,32 @@
 # the standard cmake script with version and python generation support
 
 find_package( Protobuf REQUIRED )
+
+if(MSVC AND PROTOBUF_LIBRARIES)
+	list(LENGTH PROTOBUF_LIBRARIES _PROTOBUF_LIBRARIES_len)
+	math(EXPR _PROTOBUF_LIBRARIES_elm_num "${_PROTOBUF_LIBRARIES_len} / 2 - 1")
+
+	set(_PROTOBUF_LIBRARIES_path_overlap OFF)
+	set(_PROTOBUF_LIBRARIES_path_before)
+	foreach(val RANGE ${_PROTOBUF_LIBRARIES_elm_num})
+		math(EXPR val1 "${val} * 2")
+		math(EXPR val2 "${val1} + 1")
+
+		list(GET PROTOBUF_LIBRARIES ${val1} _PROTOBUF_LIBRARIES_type)
+		list(GET PROTOBUF_LIBRARIES ${val2} _PROTOBUF_LIBRARIES_path)
+
+		if(NOT _PROTOBUF_LIBRARIES_path_before)
+			set(_PROTOBUF_LIBRARIES_path_before ${_PROTOBUF_LIBRARIES_path})
+		elseif(${_PROTOBUF_LIBRARIES_path} STREQUAL ${_PROTOBUF_LIBRARIES_path_before})
+			set(_PROTOBUF_LIBRARIES_path_overlap ON)
+		endif()
+	endforeach()
+
+	if(_PROTOBUF_LIBRARIES_path_overlap)
+		find_package(Protobuf REQUIRED CONFIG)
+	endif()
+endif()
+
 include_directories(SYSTEM ${PROTOBUF_INCLUDE_DIR})
 list(APPEND Caffe_LINKER_LIBS ${PROTOBUF_LIBRARIES})
 
