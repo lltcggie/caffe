@@ -4,6 +4,8 @@
 #include "caffe/proto/caffe.pb.h"
 #include "caffe/solver.hpp"
 
+#ifndef _MSC_VER
+
 namespace caffe {
 
 class SignalHandler {
@@ -20,5 +22,7 @@ class SignalHandler {
 };
 
 }  // namespace caffe
+
+#endif  // #ifndef _MSC_VER
 
 #endif  // INCLUDE_CAFFE_UTIL_SIGNAL_HANDLER_H_

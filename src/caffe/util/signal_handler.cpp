@@ -1,3 +1,5 @@
+#ifndef _MSC_VER
+
 #include <boost/bind.hpp>
 #include <glog/logging.h>
 
@@ -5,6 +7,7 @@
 #include <csignal>
 
 #include "caffe/util/signal_handler.h"
+
 
 namespace {
   static volatile sig_atomic_t got_sigint = false;
@@ -113,3 +116,5 @@ ActionCallback SignalHandler::GetActionFunction() {
 }
 
 }  // namespace caffe
+
+#endif  // #ifndef _MSC_VER
