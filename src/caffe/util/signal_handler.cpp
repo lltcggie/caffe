@@ -1,5 +1,3 @@
-#ifndef _MSC_VER
-
 #include <boost/bind.hpp>
 #include <glog/logging.h>
 
@@ -8,11 +6,16 @@
 
 #include "caffe/util/signal_handler.h"
 
+#ifdef _MSC_VER
+#include <Windows.h>
+#endif
+
 namespace {
   static volatile sig_atomic_t got_sigint = false;
   static volatile sig_atomic_t got_sighup = false;
   static bool already_hooked_up = false;
 
+#ifndef _MSC_VER
   void handle_signal(int signal) {
     switch (signal) {
     case SIGHUP:
@@ -67,6 +70,40 @@ namespace {
       already_hooked_up = false;
     }
   }
+#else
+  BOOL WINAPI handle_signal(DWORD signal) {
+	  switch (signal) {
+	  case CTRL_CLOSE_EVENT:
+		  got_sighup = true;
+		  return TRUE;
+	  case CTRL_C_EVENT:
+		  got_sigint = true;
+		  return TRUE;
+	  }
+  }
+
+  void HookupHandler() {
+	  if (already_hooked_up) {
+		  LOG(FATAL) << "Tried to hookup signal handlers more than once.";
+	  }
+	  already_hooked_up = true;
+
+	  if (!SetConsoleCtrlHandler(handle_signal, TRUE)) {
+		  LOG(FATAL) << "Cannot install Console Ctrl handler.";
+	  }
+  }
+
+  // Set the signal handlers to the default.
+  void UnhookHandler() {
+	  if (already_hooked_up) {
+		  if (!SetConsoleCtrlHandler(handle_signal, FALSE)) {
+			  LOG(FATAL) << "Cannot uninstall Console Ctrl handler.";
+		  }
+
+		  already_hooked_up = false;
+	  }
+  }
+#endif
 
   // Return true iff a SIGINT has been received since the last time this
   // function was called.
@@ -115,5 +152,3 @@ ActionCallback SignalHandler::GetActionFunction() {
 }
 
 }  // namespace caffe
-
-#endif  // #ifndef _MSC_VER
