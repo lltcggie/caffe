@@ -143,6 +143,66 @@ if(BUILD_python)
     find_package(NumPy 1.7.1)
     find_package(Boost 1.46 COMPONENTS python)
   endif()
+  
+  if(PYTHONLIBS_FOUND AND WIN32 AND NOT EXISTS ${PYTHON_DEBUG_LIBRARY})
+    # replace python??_d.lib to python??.lib when not exist python??_d.lib for Windows
+    function(get_library_path LIBRARIES LIBRARIE_type LIBRARIE_path)
+      if(NOT LIBRARIES)
+        return()
+      endif()
+
+      set(${LIBRARIE_path} "" PARENT_SCOPE)
+
+      list(LENGTH LIBRARIES _LIBRARIES_len)
+      math(EXPR _LIBRARIES_elm_num "${_LIBRARIES_len} / 2 - 1")
+    
+      foreach(val RANGE ${_LIBRARIES_elm_num})
+        math(EXPR val1 "${val} * 2")
+        math(EXPR val2 "${val1} + 1")
+
+        list(GET LIBRARIES ${val1} _LIBRARIES_type)
+        list(GET LIBRARIES ${val2} _LIBRARIES_path)
+
+        if(${_LIBRARIES_type} STREQUAL ${LIBRARIE_type})
+          set(${LIBRARIE_path} "${_LIBRARIES_path}" PARENT_SCOPE)
+        endif()
+      endforeach()
+    endfunction()
+
+    function(set_library_path LIBRARIES Target_LIBRARIE_type Target_LIBRARIE_path DST_NEW_LIBRARIES)
+      if(NOT LIBRARIES)
+        return()
+      endif()
+
+      set(NEW_LIBRARIES)
+
+      list(LENGTH LIBRARIES _LIBRARIES_len)
+      math(EXPR _LIBRARIES_elm_num "${_LIBRARIES_len} / 2 - 1")
+
+      foreach(val RANGE ${_LIBRARIES_elm_num})
+        math(EXPR val1 "${val} * 2")
+        math(EXPR val2 "${val1} + 1")
+
+        list(GET LIBRARIES ${val1} _LIBRARIES_type)
+        list(GET LIBRARIES ${val2} _LIBRARIES_path)
+
+        if(${_LIBRARIES_type} STREQUAL ${Target_LIBRARIE_type})
+          list(APPEND NEW_LIBRARIES ${_LIBRARIES_type} ${Target_LIBRARIE_path})
+        else()
+          list(APPEND NEW_LIBRARIES ${_LIBRARIES_type} ${_LIBRARIES_path})
+        endif()
+      endforeach()
+
+      set(${DST_NEW_LIBRARIES} "${NEW_LIBRARIES}" PARENT_SCOPE)
+    endfunction()
+
+    get_library_path("${PYTHON_LIBRARIES}" "optimized" _optimized_PYTHON_LIBRARIE)
+
+    if(NOT "${PYTHON_DEBUG_LIBRARY}" STREQUAL "${_optimized_PYTHON_LIBRARIE}")
+      set_library_path("${PYTHON_LIBRARIES}" "debug" ${_optimized_PYTHON_LIBRARIE} PYTHON_LIBRARIES)
+    endif()
+  endif()
+
   if(PYTHONLIBS_FOUND AND NUMPY_FOUND AND Boost_PYTHON_FOUND)
     set(HAVE_PYTHON TRUE)
     if(BUILD_python_layer)

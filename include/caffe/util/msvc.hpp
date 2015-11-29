@@ -5,6 +5,7 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+#include <direct.h>
 
 #if _MSC_VER >= 1400  // VC 8.0 and later deprecate snprintf and _snprintf.
 # define snprintf _snprintf_s
