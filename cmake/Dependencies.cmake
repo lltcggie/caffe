@@ -154,6 +154,11 @@ if(BUILD_python)
       set(${LIBRARIE_path} "" PARENT_SCOPE)
 
       list(LENGTH LIBRARIES _LIBRARIES_len)
+
+      if(_LIBRARIES_len LESS 2)
+        return()
+      endif()
+
       math(EXPR _LIBRARIES_elm_num "${_LIBRARIES_len} / 2 - 1")
     
       foreach(val RANGE ${_LIBRARIES_elm_num})
@@ -177,6 +182,11 @@ if(BUILD_python)
       set(NEW_LIBRARIES)
 
       list(LENGTH LIBRARIES _LIBRARIES_len)
+
+      if(_LIBRARIES_len LESS 2)
+        return()
+      endif()
+
       math(EXPR _LIBRARIES_elm_num "${_LIBRARIES_len} / 2 - 1")
 
       foreach(val RANGE ${_LIBRARIES_elm_num})
@@ -198,7 +208,7 @@ if(BUILD_python)
 
     get_library_path("${PYTHON_LIBRARIES}" "optimized" _optimized_PYTHON_LIBRARIE)
 
-    if(NOT "${PYTHON_DEBUG_LIBRARY}" STREQUAL "${_optimized_PYTHON_LIBRARIE}")
+    if(_optimized_PYTHON_LIBRARIE AND NOT "${PYTHON_DEBUG_LIBRARY}" STREQUAL "${_optimized_PYTHON_LIBRARIE}")
       set_library_path("${PYTHON_LIBRARIES}" "debug" ${_optimized_PYTHON_LIBRARIE} PYTHON_LIBRARIES)
     endif()
   endif()
@@ -208,6 +218,9 @@ if(BUILD_python)
     if(BUILD_python_layer)
       if(Boost_USE_STATIC_LIBS AND MSVC)
         add_definitions(-DBOOST_PYTHON_STATIC_LIB)
+      endif()
+      if(MSVC)
+        add_definitions(-DMS_NO_COREDLL)
       endif()
       add_definitions(-DWITH_PYTHON_LAYER)
       include_directories(SYSTEM ${PYTHON_INCLUDE_DIRS} ${NUMPY_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
