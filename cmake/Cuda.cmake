@@ -179,6 +179,12 @@ function(detect_cuDNN)
             PATHS ${CUDNN_ROOT} $ENV{CUDNN_ROOT} ${CUDA_TOOLKIT_INCLUDE}
             DOC "Path to cuDNN include directory." )
 
+  if(NOT MSVC)
+    set(FIND_CUDNN_LIBRARY_NAME libcudnn.so)
+  else()
+    set(FIND_CUDNN_LIBRARY_NAME cudnn.lib)
+  endif()
+
   get_filename_component(__libpath_hist ${CUDA_CUDART_LIBRARY} PATH)
   find_library(CUDNN_LIBRARY NAMES libcudnn.so # libcudnn_static.a
                              PATHS ${CUDNN_ROOT} $ENV{CUDNN_ROOT} ${CUDNN_INCLUDE} ${__libpath_hist}
