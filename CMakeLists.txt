@@ -68,6 +68,7 @@ endif()
 
 # ---[ Warnings
 caffe_warnings_disable(CMAKE_CXX_FLAGS -Wno-sign-compare -Wno-uninitialized)
+caffe_warnings_disable(CMAKE_CXX_FLAGS /wd4819)
 
 # ---[ Config generation
 configure_file(cmake/Templates/caffe_config.h.in "${PROJECT_BINARY_DIR}/caffe_config.h")
