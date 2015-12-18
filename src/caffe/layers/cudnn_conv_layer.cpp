@@ -84,6 +84,19 @@ void CuDNNConvolutionLayer<Dtype>::LayerSetUp(
     cudnn::createTensor4dDesc<Dtype>(&bias_desc_);
   }
 
+  prev_num_ = 0;
+  prev_channels_ = 0;
+  prev_group_ = 0;
+  prev_num_output_ = 0;
+  prev_out_spatial_dim_ = 0;
+  prev_width_ = 0;
+  prev_width_out_ = 0;
+  prev_height_ = 0;
+  prev_height_out_ = 0;
+  prev_pad_w_ = 0;
+  prev_stride_w_ = 0;
+  prev_stride_h_ = 0;
+
   handles_setup_ = true;
 }
 
@@ -108,120 +121,155 @@ void CuDNNConvolutionLayer<Dtype>::Reshape(
   const int stride_h = stride_data[0];
   const int stride_w = stride_data[1];
 
-  // Specify workspace limit for kernels directly until we have a
-  // planning strategy and a rewrite of Caffe's GPU memory mangagement
-  size_t workspace_limit_bytes = 8*1024*1024;
+  if (prev_num_ != this->num_ || prev_channels_ != this->channels_ || prev_group_ != this->group_ || prev_num_output_ != this->num_output_ ||
+	  prev_out_spatial_dim_ != this->out_spatial_dim_ || prev_width_ != width || prev_width_out_ != width_out || prev_height_ != height ||
+	  prev_height_out_ != height_out || prev_pad_w_ != pad_w || prev_pad_h_ != pad_h || prev_stride_w_ != stride_w || prev_stride_h_ != stride_h)
+  {
+	  prev_num_ = this->num_;
+	  prev_channels_ = this->channels_;
+	  prev_group_ = this->group_;
+	  prev_num_output_ = this->num_output_;
+	  prev_out_spatial_dim_ = this->out_spatial_dim_;
+	  prev_width_ = width;
+	  prev_width_out_ = width_out;
+	  prev_height_ = height;
+	  prev_height_out_ = height_out;
+	  prev_pad_w_ = pad_w;
+	  prev_pad_h_ = pad_h;
+	  prev_stride_w_ = stride_w;
+	  prev_stride_h_ = stride_h;
 
-  for (int i = 0; i < bottom.size(); i++) {
-    cudnn::setTensor4dDesc<Dtype>(&bottom_descs_[i],
-        this->num_,
-        this->channels_ / this->group_, height, width,
-        this->channels_ * height * width,
-        height * width, width, 1);
-    cudnn::setTensor4dDesc<Dtype>(&top_descs_[i],
-        this->num_,
-        this->num_output_ / this->group_, height_out, width_out,
-        this->num_output_ * this->out_spatial_dim_,
-        this->out_spatial_dim_, width_out, 1);
-    cudnn::setConvolutionDesc<Dtype>(&conv_descs_[i], bottom_descs_[i],
-        filter_desc_, pad_h, pad_w,
-        stride_h, stride_w);
+	  // Specify workspace limit for kernels directly until we have a
+	  // planning strategy and a rewrite of Caffe's GPU memory mangagement
+	  size_t workspace_limit_bytes = 8 * 1024 * 1024;
 
-    // choose forward and backward algorithms + workspace(s)
-    CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(handle_[0],
-      bottom_descs_[i],
-      filter_desc_,
-      conv_descs_[i],
-      top_descs_[i],
-      CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
-      workspace_limit_bytes,
-      &fwd_algo_[i]));
+	  for (int i = 0; i < bottom.size(); i++) {
+		  cudnn::setTensor4dDesc<Dtype>(&bottom_descs_[i],
+			  this->num_,
+			  this->channels_ / this->group_, height, width,
+			  this->channels_ * height * width,
+			  height * width, width, 1);
+		  cudnn::setTensor4dDesc<Dtype>(&top_descs_[i],
+			  this->num_,
+			  this->num_output_ / this->group_, height_out, width_out,
+			  this->num_output_ * this->out_spatial_dim_,
+			  this->out_spatial_dim_, width_out, 1);
+		  cudnn::setConvolutionDesc<Dtype>(&conv_descs_[i], bottom_descs_[i],
+			  filter_desc_, pad_h, pad_w,
+			  stride_h, stride_w);
 
-    CUDNN_CHECK(cudnnGetConvolutionForwardWorkspaceSize(handle_[0],
-      bottom_descs_[i],
-      filter_desc_,
-      conv_descs_[i],
-      top_descs_[i],
-      fwd_algo_[i],
-      &(workspace_fwd_sizes_[i])));
+#if 1
+		  // choose forward and backward algorithms + workspace(s)
+		  CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(handle_[0],
+			  bottom_descs_[i],
+			  filter_desc_,
+			  conv_descs_[i],
+			  top_descs_[i],
+			  CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
+			  workspace_limit_bytes,
+			  &fwd_algo_[i]));
+#else
+		  int count;
+		  cudnnConvolutionFwdAlgoPerf_t choosen_algo_perf;
+		  // choose forward and backward algorithms + workspace(s)
+		  CUDNN_CHECK(cudnnFindConvolutionForwardAlgorithm(handle_[0],
+			  bottom_descs_[i],
+			  filter_desc_,
+			  conv_descs_[i],
+			  top_descs_[i],
+			  1,
+			  &count,
+			  &choosen_algo_perf));
 
-    // choose backward algorithm for filter
-    CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(handle_[0],
-          bottom_descs_[i], top_descs_[i], conv_descs_[i], filter_desc_,
-          CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
-          workspace_limit_bytes, &bwd_filter_algo_[i]) );
+		  fwd_algo_[i] = choosen_algo_perf.algo;
+#endif
 
-    // get workspace for backwards filter algorithm
-    CUDNN_CHECK(cudnnGetConvolutionBackwardFilterWorkspaceSize(handle_[0],
-          bottom_descs_[i], top_descs_[i], conv_descs_[i], filter_desc_,
-          bwd_filter_algo_[i], &workspace_bwd_filter_sizes_[i]));
+		  CUDNN_CHECK(cudnnGetConvolutionForwardWorkspaceSize(handle_[0],
+			  bottom_descs_[i],
+			  filter_desc_,
+			  conv_descs_[i],
+			  top_descs_[i],
+			  fwd_algo_[i],
+			  &(workspace_fwd_sizes_[i])));
 
-    // choose backward algo for data
-    CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(handle_[0],
-          filter_desc_, top_descs_[i], conv_descs_[i], bottom_descs_[i],
-          CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT,
-        workspace_limit_bytes, &bwd_data_algo_[i]));
+		  // choose backward algorithm for filter
+		  CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(handle_[0],
+			  bottom_descs_[i], top_descs_[i], conv_descs_[i], filter_desc_,
+			  CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
+			  workspace_limit_bytes, &bwd_filter_algo_[i]));
 
-    // get workspace size
-    CUDNN_CHECK(cudnnGetConvolutionBackwardDataWorkspaceSize(handle_[0],
-          filter_desc_, top_descs_[i], conv_descs_[i], bottom_descs_[i],
-          bwd_data_algo_[i], &workspace_bwd_data_sizes_[i]) );
-  }
+		  // get workspace for backwards filter algorithm
+		  CUDNN_CHECK(cudnnGetConvolutionBackwardFilterWorkspaceSize(handle_[0],
+			  bottom_descs_[i], top_descs_[i], conv_descs_[i], filter_desc_,
+			  bwd_filter_algo_[i], &workspace_bwd_filter_sizes_[i]));
 
-  // reduce over all workspace sizes to get a maximum to allocate / reallocate
-  size_t total_workspace_fwd = 0;
-  size_t total_workspace_bwd_data = 0;
-  size_t total_workspace_bwd_filter = 0;
+		  // choose backward algo for data
+		  CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(handle_[0],
+			  filter_desc_, top_descs_[i], conv_descs_[i], bottom_descs_[i],
+			  CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT,
+			  workspace_limit_bytes, &bwd_data_algo_[i]));
 
-  for (size_t i = 0; i < bottom.size(); i++) {
-    total_workspace_fwd        = std::max(total_workspace_fwd,
-                                     workspace_fwd_sizes_[i]);
-    total_workspace_bwd_data   = std::max(total_workspace_bwd_data,
-                                     workspace_bwd_data_sizes_[i]);
-    total_workspace_bwd_filter = std::max(total_workspace_bwd_filter,
-                                     workspace_bwd_filter_sizes_[i]);
-  }
-  // get max over all operations
-  size_t max_workspace = std::max(total_workspace_fwd,
-                             total_workspace_bwd_data);
-  max_workspace = std::max(max_workspace, total_workspace_bwd_filter);
-  // ensure all groups have enough workspace
-  size_t total_max_workspace = max_workspace *
-                               (this->group_ * CUDNN_STREAMS_PER_GROUP);
+		  // get workspace size
+		  CUDNN_CHECK(cudnnGetConvolutionBackwardDataWorkspaceSize(handle_[0],
+			  filter_desc_, top_descs_[i], conv_descs_[i], bottom_descs_[i],
+			  bwd_data_algo_[i], &workspace_bwd_data_sizes_[i]));
+	  }
 
-  // this is the total amount of storage needed over all groups + streams
-  if (total_max_workspace > workspaceSizeInBytes) {
-    DLOG(INFO) << "Reallocating workspace storage: " << total_max_workspace;
-    workspaceSizeInBytes = total_max_workspace;
+	  // reduce over all workspace sizes to get a maximum to allocate / reallocate
+	  size_t total_workspace_fwd = 0;
+	  size_t total_workspace_bwd_data = 0;
+	  size_t total_workspace_bwd_filter = 0;
 
-    // free the existing workspace and allocate a new (larger) one
-    cudaFree(this->workspaceData);
+	  for (size_t i = 0; i < bottom.size(); i++) {
+		  total_workspace_fwd = std::max(total_workspace_fwd,
+			  workspace_fwd_sizes_[i]);
+		  total_workspace_bwd_data = std::max(total_workspace_bwd_data,
+			  workspace_bwd_data_sizes_[i]);
+		  total_workspace_bwd_filter = std::max(total_workspace_bwd_filter,
+			  workspace_bwd_filter_sizes_[i]);
+	  }
+	  // get max over all operations
+	  size_t max_workspace = std::max(total_workspace_fwd,
+		  total_workspace_bwd_data);
+	  max_workspace = std::max(max_workspace, total_workspace_bwd_filter);
+	  // ensure all groups have enough workspace
+	  size_t total_max_workspace = max_workspace *
+		  (this->group_ * CUDNN_STREAMS_PER_GROUP);
 
-    cudaError_t err = cudaMalloc(&(this->workspaceData), workspaceSizeInBytes);
-    if (err != cudaSuccess) {
-      // force zero memory path
-      for (int i = 0; i < bottom.size(); i++) {
-        workspace_fwd_sizes_[i] = 0;
-        workspace_bwd_filter_sizes_[i] = 0;
-        workspace_bwd_data_sizes_[i] = 0;
-        fwd_algo_[i] = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM;
-        bwd_filter_algo_[i] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0;
-        bwd_data_algo_[i] = CUDNN_CONVOLUTION_BWD_DATA_ALGO_0;
-      }
+	  // this is the total amount of storage needed over all groups + streams
+	  if (total_max_workspace > workspaceSizeInBytes) {
+		  DLOG(INFO) << "Reallocating workspace storage: " << total_max_workspace;
+		  workspaceSizeInBytes = total_max_workspace;
 
-      // NULL out all workspace pointers
-      for (int g = 0; g < (this->group_ * CUDNN_STREAMS_PER_GROUP); g++) {
-        workspace[g] = NULL;
-      }
-      // NULL out underlying data
-      workspaceData = NULL;
-      workspaceSizeInBytes = 0;
-    }
+		  // free the existing workspace and allocate a new (larger) one
+		  cudaFree(this->workspaceData);
 
-    // if we succeed in the allocation, set pointer aliases for workspaces
-    for (int g = 0; g < (this->group_ * CUDNN_STREAMS_PER_GROUP); g++) {
-      workspace[g] = reinterpret_cast<char *>(workspaceData) + g*max_workspace;
-    }
+		  cudaError_t err = cudaMalloc(&(this->workspaceData), workspaceSizeInBytes);
+		  if (err != cudaSuccess) {
+			  // force zero memory path
+			  for (int i = 0; i < bottom.size(); i++) {
+				  workspace_fwd_sizes_[i] = 0;
+				  workspace_bwd_filter_sizes_[i] = 0;
+				  workspace_bwd_data_sizes_[i] = 0;
+				  fwd_algo_[i] = CUDNN_CONVOLUTION_FWD_ALGO_FFT_TILING;
+				  bwd_filter_algo_[i] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0;
+				  bwd_data_algo_[i] = CUDNN_CONVOLUTION_BWD_DATA_ALGO_0;
+			  }
+
+			  // NULL out all workspace pointers
+			  for (int g = 0; g < (this->group_ * CUDNN_STREAMS_PER_GROUP); g++) {
+				  workspace[g] = NULL;
+			  }
+			  // NULL out underlying data
+			  workspaceData = NULL;
+			  workspaceSizeInBytes = 0;
+		  }
+
+		  // if we succeed in the allocation, set pointer aliases for workspaces
+		  for (int g = 0; g < (this->group_ * CUDNN_STREAMS_PER_GROUP); g++) {
+			  workspace[g] = reinterpret_cast<char *>(workspaceData)+g*max_workspace;
+		  }
+	  }
   }
 
   // Tensor descriptor for bias.
