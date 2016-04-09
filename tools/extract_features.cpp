@@ -21,6 +21,10 @@ using boost::shared_ptr;
 using std::string;
 namespace db = caffe::db;
 
+#ifdef _MSC_VER
+#define uint uint32_t
+#endif  // _MSC_VER
+
 template<typename Dtype>
 int feature_extraction_pipeline(int argc, char** argv);
 

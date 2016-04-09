@@ -15,6 +15,8 @@
 #include "caffe/proto/caffe.pb.h"
 #include "caffe/util/math_functions.hpp"
 
+#include "caffe/util/msvc.hpp"
+
 #ifdef USE_LEVELDB
 #include "leveldb/db.h"
 

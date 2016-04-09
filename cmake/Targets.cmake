@@ -4,7 +4,16 @@
 if(BUILD_SHARED_LIBS)
   set(Caffe_LINK caffe)
 else()
-  if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  if(MSVC)
+      set(Caffe_LINK caffe)
+      # Not sure if these flags are needed anymore
+      set(CMAKE_EXE_LINKER_FLAGS_RELEASE    "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:NOREF")
+      set(CMAKE_EXE_LINKER_FLAGS_DEBUG      "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /OPT:NOREF")
+      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:NOREF")
+      set(CMAKE_SHARED_LINKER_FLAGS_DEBUG   "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} /OPT:NOREF")
+      set(CMAKE_MODULE_LINKER_FLAGS_RELEASE "${CMAKE_MODULE_LINKER_FLAGS_RELEASE} /OPT:NOREF")
+      set(CMAKE_MODULE_LINKER_FLAGS_DEBUG   "${CMAKE_MODULE_LINKER_FLAGS_DEBUG} /OPT:NOREF")
+  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang
     set(Caffe_LINK -Wl,-force_load caffe)
   elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(Caffe_LINK -Wl,--whole-archive caffe -Wl,--no-whole-archive)
@@ -54,6 +63,17 @@ function(caffe_pickup_caffe_sources root)
   caffe_source_group("Include"        GLOB "${root}/include/caffe/*.h*")
   caffe_source_group("Include\\Util"  GLOB "${root}/include/caffe/util/*.h*")
   caffe_source_group("Include"        GLOB "${PROJECT_BINARY_DIR}/caffe_config.h*")
+  if(MSVC)
+    # export header defines __declspec(dllexport/dllimport)
+    set(export_header "${PROJECT_BINARY_DIR}/caffe/export.hpp")
+    source_group("Include" FILES ${export_header})
+    if(MSVC AND NOT BUILD_SHARED_LIBS)
+      # forcelink header adds linker pragma's 
+      # to force unreferenced static symbol linking
+      set(forcelink_header "${PROJECT_BINARY_DIR}/caffe/forcelink.hpp")
+      source_group("Include" FILES ${forcelink_header})
+    endif()
+  endif()
   caffe_source_group("Source"         GLOB "${root}/src/caffe/*.cpp")
   caffe_source_group("Source\\Util"   GLOB "${root}/src/caffe/util/*.cpp")
   caffe_source_group("Source\\Layers" GLOB "${root}/src/caffe/layers/*.cpp")
@@ -78,6 +98,10 @@ function(caffe_pickup_caffe_sources root)
   list(APPEND srcs ${hdrs} ${PROJECT_BINARY_DIR}/caffe_config.h)
   list(APPEND test_srcs ${test_hdrs})
 
+  if(MSVC)
+    list(APPEND srcs ${export_header} ${forcelink_header}) 
+  endif()
+  
   # collect cuda files
   file(GLOB    test_cuda ${root}/src/caffe/test/test_*.cu)
   file(GLOB_RECURSE cuda ${root}/src/caffe/*.cu)
@@ -98,6 +122,11 @@ function(caffe_pickup_caffe_sources root)
   set(cuda ${cuda} PARENT_SCOPE)
   set(test_srcs ${test_srcs} PARENT_SCOPE)
   set(test_cuda ${test_cuda} PARENT_SCOPE)
+  
+  if(MSVC)
+    set(export_header ${export_header} PARENT_SCOPE)
+    set(forcelink_header ${forcelink_header} PARENT_SCOPE)
+  endif()
 endfunction()
 
 ################################################################################################
