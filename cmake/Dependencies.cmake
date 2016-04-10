@@ -4,8 +4,10 @@ set(Caffe_LINKER_LIBS "")
 # ---[ Boost
 if(MSVC)
     add_definitions(-DBOOST_ALL_NO_LIB)    
+    find_package(Boost 1.46 REQUIRED COMPONENTS system thread filesystem)
+else()
+    find_package(Boost 1.46 REQUIRED COMPONENTS system thread)
 endif()
-find_package(Boost 1.46 REQUIRED COMPONENTS system thread)
 include_directories(SYSTEM ${Boost_INCLUDE_DIR})
 list(APPEND Caffe_LINKER_LIBS ${Boost_LIBRARIES})
 

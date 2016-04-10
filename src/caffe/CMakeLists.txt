@@ -38,7 +38,7 @@ if(MSVC)
         set(CAFFE_DLLIMPORT __declspec(dllimport))
     else()
         get_filename_component(forcelink_header_name ${forcelink_header} NAME)
-        set(CAFFE_INCLUDE_FORCELINK "#      include \"caffe/${forcelink_header_name}\"")
+        set(CAFFE_INCLUDE_FORCELINK "#      include <caffe/${forcelink_header_name}>")
         # add a post build command to generate a header file that will
         # force the linker to include the statically registered layers
         # in a final executable.

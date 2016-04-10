@@ -1,7 +1,13 @@
 #ifndef CAFFE_UTIL_IO_H_
 #define CAFFE_UTIL_IO_H_
 
+#ifndef _MSC_VER
 #include <unistd.h>
+#else
+#include <boost/filesystem.hpp>
+#include <sstream>
+#include <iomanip>
+#endif
 #include <string>
 
 #include "google/protobuf/message.h"
@@ -15,6 +21,7 @@ namespace caffe {
 
 using ::google::protobuf::Message;
 
+#ifndef _MSC_VER
 inline void MakeTempFilename(string* temp_filename) {
   temp_filename->clear();
   *temp_filename = "/tmp/caffe_test.XXXXXX";
@@ -40,6 +47,48 @@ inline void MakeTempDir(string* temp_dirname) {
   *temp_dirname = temp_dirname_cstr;
   delete[] temp_dirname_cstr;
 }
+#else
+
+#ifndef CAFFE_TMP_DIR_RETRIES
+#define CAFFE_TMP_DIR_RETRIES 100
+#endif
+
+using ::boost::filesystem::path;
+
+inline void MakeTempDir(string* temp_dirname) {
+	temp_dirname->clear();
+	const path& model =
+		boost::filesystem::temp_directory_path() / "caffe_test.%%%%-%%%%";
+	for (int i = 0; i < CAFFE_TMP_DIR_RETRIES; i++) {
+		const path& dir = boost::filesystem::unique_path(model).string();
+		bool done = boost::filesystem::create_directory(dir);
+		if (done) {
+			*temp_dirname = dir.string();
+			return;
+		}
+	}
+	LOG(FATAL) << "Failed to create a temporary directory.";
+}
+
+inline void MakeTempFilename(string* temp_filename) {
+	static path temp_files_subpath;
+	static uint64_t next_temp_file = 0;
+	temp_filename->clear();
+	if (temp_files_subpath.empty()) {
+		string path_string = "";
+		MakeTempDir(&path_string);
+		temp_files_subpath = path_string;
+	}
+
+	std::ostringstream s;
+	s << std::setw(9) << std::setfill('0') << next_temp_file++;
+
+	*temp_filename =
+		(temp_files_subpath / s.str()).string();
+}
+
+#undef CAFFE_TMP_DIR_RETRIES
+#endif
 
 bool ReadProtoFromTextFile(const char* filename, Message* proto);
 

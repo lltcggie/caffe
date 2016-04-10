@@ -66,9 +66,18 @@ if(MSVC AND BUILD_WITH_STATIC_CRT)
   endforeach(flag_var)
 endif()
 
+if(MSVC)
+  # ---[ Parallel Build
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}" " /MP")
+endif()
+
 # ---[ Warnings
 caffe_warnings_disable(CMAKE_CXX_FLAGS -Wno-sign-compare -Wno-uninitialized)
 caffe_warnings_disable(CMAKE_CXX_FLAGS /wd4819)
+
+if(MSVC)
+  add_definitions(-D_SCL_SECURE_NO_WARNINGS)
+endif()
 
 # ---[ Config generation
 configure_file(cmake/Templates/caffe_config.h.in "${PROJECT_BINARY_DIR}/caffe_config.h")

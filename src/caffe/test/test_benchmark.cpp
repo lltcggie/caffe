@@ -1,4 +1,6 @@
+#ifndef _MSC_VER
 #include <unistd.h>  // for usleep
+#endif
 
 #include "gtest/gtest.h"
 
@@ -6,6 +8,10 @@
 #include "caffe/util/benchmark.hpp"
 
 #include "caffe/test/test_caffe_main.hpp"
+
+#ifdef _MSC_VER
+#include <Windows.h>
+#endif
 
 namespace caffe {
 
@@ -64,7 +70,11 @@ TYPED_TEST(BenchmarkTest, TestTimerMilliSeconds) {
   EXPECT_FALSE(timer.running());
   EXPECT_FALSE(timer.has_run_at_least_once());
   timer.Start();
+#ifndef _MSC_VER
   usleep(300 * 1000);
+#else
+  Sleep(300);
+#endif
   EXPECT_GE(timer.MilliSeconds(), 300 - kMillisecondsThreshold);
   EXPECT_LE(timer.MilliSeconds(), 300 + kMillisecondsThreshold);
   EXPECT_TRUE(timer.initted());
@@ -79,7 +89,11 @@ TYPED_TEST(BenchmarkTest, TestTimerSeconds) {
   EXPECT_FALSE(timer.running());
   EXPECT_FALSE(timer.has_run_at_least_once());
   timer.Start();
+#ifndef _MSC_VER
   usleep(300 * 1000);
+#else
+  Sleep(300);
+#endif
   EXPECT_GE(timer.Seconds(), 0.3 - kMillisecondsThreshold / 1000.);
   EXPECT_LE(timer.Seconds(), 0.3 + kMillisecondsThreshold / 1000.);
   EXPECT_TRUE(timer.initted());

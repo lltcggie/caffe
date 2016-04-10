@@ -155,12 +155,10 @@ class CuDNNBatchNormLayerTest : public GPUDeviceTest<Dtype> {
   vector<Blob<Dtype>*> blob_top_vec_;
 };
 
-template <typename TypeParam>
-void CuDNNBatchNormLayerTest<TypeParam>::checkMeanVar(
-    const Blob<TypeParam> *top,
+template <typename Dtype>
+void CuDNNBatchNormLayerTest<Dtype>::checkMeanVar(
+    const Blob<Dtype> *top,
     int num, int channels, int height, int width) {
-  typedef TypeParam Dtype;
-
   for (int j = 0; j < channels; ++j) {
     Dtype mean = 0, var = 0;
     for (int i = 0; i < num; ++i) {

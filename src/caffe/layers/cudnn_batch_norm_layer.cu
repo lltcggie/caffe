@@ -79,16 +79,35 @@ void CuDNNBatchNormLayer<Dtype>::Backward_gpu(
   Dtype* scale_diff = this->blobs_[0]->mutable_gpu_diff();
   Dtype* bias_diff = this->blobs_[1]->mutable_gpu_diff();
 
+#if CUDNN_VERSION >= 4005
+  // call Batch Normalization Backward
+  CUDNN_CHECK(cudnnBatchNormalizationBackward(
+	  Caffe::cudnn_handle(),
+	  mode_,
+	  cudnn::dataType<Dtype>::one,
+	  cudnn::dataType<Dtype>::zero,
+	  cudnn::dataType<Dtype>::one,
+	  cudnn::dataType<Dtype>::one,
+	  bottom_desc_,
+	  bottom_data,
+	  bottom_desc_,
+	  top_diff,
+	  bottom_desc_,
+	  bottom_diff,
+	  scale_bias_mean_var_desc_,
+	  scale_data,
+	  scale_diff,
+	  bias_diff,
+	  this->epsilon_,
+	  save_mean,
+	  save_inv_var));
+#else
   // call Batch Normalization Backward
   CUDNN_CHECK(cudnnBatchNormalizationBackward(
       Caffe::cudnn_handle(),
       mode_,
       cudnn::dataType<Dtype>::one,
       cudnn::dataType<Dtype>::zero,
-#if CUDNN_VERSION >= 4005
-      cudnn::dataType<Dtype>::one,
-      cudnn::dataType<Dtype>::one,
-#endif
       bottom_desc_,
       bottom_data,
       bottom_desc_,
@@ -102,6 +121,7 @@ void CuDNNBatchNormLayer<Dtype>::Backward_gpu(
       this->epsilon_,
       save_mean,
       save_inv_var));
+#endif
 }
 
 INSTANTIATE_LAYER_GPU_FUNCS(CuDNNBatchNormLayer);

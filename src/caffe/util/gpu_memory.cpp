@@ -8,6 +8,10 @@
 #include "cub/cub/util_allocator.cuh"
 #endif
 
+#ifdef _MSC_VER
+#undef min
+#endif
+
 namespace caffe {
 
 #ifndef CPU_ONLY  // CPU-only Caffe.
