@@ -1,25 +1,26 @@
 ################################################################################################
 # Defines global Caffe_LINK flag, This flag is required to prevent linker from excluding
 # some objects which are not addressed directly but are registered via static constructors
-if(BUILD_SHARED_LIBS)
-  set(Caffe_LINK caffe)
-else()
-  if(MSVC)
-      set(Caffe_LINK caffe)
-      # Not sure if these flags are needed anymore
-      set(CMAKE_EXE_LINKER_FLAGS_RELEASE    "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:NOREF")
-      set(CMAKE_EXE_LINKER_FLAGS_DEBUG      "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /OPT:NOREF")
-      set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:NOREF")
-      set(CMAKE_SHARED_LINKER_FLAGS_DEBUG   "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} /OPT:NOREF")
-      set(CMAKE_MODULE_LINKER_FLAGS_RELEASE "${CMAKE_MODULE_LINKER_FLAGS_RELEASE} /OPT:NOREF")
-      set(CMAKE_MODULE_LINKER_FLAGS_DEBUG   "${CMAKE_MODULE_LINKER_FLAGS_DEBUG} /OPT:NOREF")
-  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(Caffe_LINK -Wl,-force_load caffe)
-  elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set(Caffe_LINK -Wl,--whole-archive caffe -Wl,--no-whole-archive)
+macro(caffe_set_caffe_link)
+  if(BUILD_SHARED_LIBS)
+    set(Caffe_LINK caffe)
+  else()
+    if(MSVC)
+        set(Caffe_LINK caffe)
+        # Not sure if these flags are needed anymore
+        set(CMAKE_EXE_LINKER_FLAGS_RELEASE    "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /OPT:NOREF")
+        set(CMAKE_EXE_LINKER_FLAGS_DEBUG      "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /OPT:NOREF")
+        set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT:NOREF")
+        set(CMAKE_SHARED_LINKER_FLAGS_DEBUG   "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} /OPT:NOREF")
+        set(CMAKE_MODULE_LINKER_FLAGS_RELEASE "${CMAKE_MODULE_LINKER_FLAGS_RELEASE} /OPT:NOREF")
+        set(CMAKE_MODULE_LINKER_FLAGS_DEBUG   "${CMAKE_MODULE_LINKER_FLAGS_DEBUG} /OPT:NOREF")
+    elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+      set(Caffe_LINK -Wl,-force_load caffe)
+    elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+      set(Caffe_LINK -Wl,--whole-archive caffe -Wl,--no-whole-archive)
+    endif()
   endif()
-endif()
-
+endmacro()
 ################################################################################################
 # Convenient command to setup source group for IDEs that support this feature (VS, XCode)
 # Usage:
