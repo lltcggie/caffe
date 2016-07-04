@@ -13,9 +13,8 @@ void CuDNNSigmoidLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   CUDNN_CHECK(cudnnCreate(&handle_));
   cudnn::createTensor4dDesc<Dtype>(&bottom_desc_);
   cudnn::createTensor4dDesc<Dtype>(&top_desc_);
-  cudnnCreateActivationDescriptor(&activ_desc_);
-  cudnnSetActivationDescriptor(activ_desc_, CUDNN_ACTIVATION_SIGMOID,
-                               CUDNN_PROPAGATE_NAN, 0.0);
+  cudnn::createActivationDescriptor<Dtype>(&activ_desc_,
+      CUDNN_ACTIVATION_SIGMOID);
   handles_setup_ = true;
 }
 
