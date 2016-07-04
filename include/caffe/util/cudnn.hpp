@@ -137,11 +137,6 @@ inline void createPoolingDesc(cudnnPoolingDescriptor_t* pool_desc,
   CUDNN_CHECK(cudnnSetPooling2dDescriptor_v4(*pool_desc, *mode,
         CUDNN_PROPAGATE_NAN, h, w, pad_h, pad_w, stride_h, stride_w));
 #endif
-#else
-  CUDNN_CHECK(cudnnSetPooling2dDescriptor_v4(*pool_desc, *mode,
-                                          CUDNN_PROPAGATE_NAN, h, w,
-                                          pad_h, pad_w, stride_h, stride_w));
-#endif
 }
 
 template <typename Dtype>
