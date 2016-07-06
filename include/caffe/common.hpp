@@ -183,6 +183,16 @@ class Caffe {
   inline static bool root_solver() { return Get().root_solver_; }
   inline static void set_root_solver(bool val) { Get().root_solver_ = val; }
 
+  static void SetGetcuDNNAlgorithmFunc(int (*func)(const char *layer_name, int num_input, int num_output, int batch_size,
+	  int width, int height, int kernel_w, int kernel_h, int pad_w, int pad_h, int stride_w, int stride_h));
+  static int GetcuDNNAlgorithm(const char *layer_name, int num_input, int num_output, int batch_size,
+	  int width, int height, int kernel_w, int kernel_h, int pad_w, int pad_h, int stride_w, int stride_h);
+
+  static void SetSetcuDNNAlgorithmFunc(void(*func)(int algo, const char *layer_name, int num_input, int num_output, int batch_size,
+	  int width, int height, int kernel_w, int kernel_h, int pad_w, int pad_h, int stride_w, int stride_h));
+  static void SetcuDNNAlgorithm(int algo, const char *layer_name, int num_input, int num_output, int batch_size,
+	  int width, int height, int kernel_w, int kernel_h, int pad_w, int pad_h, int stride_w, int stride_h);
+
  protected:
 #ifndef CPU_ONLY
   cublasHandle_t cublas_handle_;

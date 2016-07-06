@@ -31,7 +31,6 @@ class CuDNNDeconvolutionLayer : public DeconvolutionLayer<Dtype> {
  public:
   explicit CuDNNDeconvolutionLayer(const LayerParameter& param)
       : DeconvolutionLayer<Dtype>(param), handles_setup_(false) {}
-  virtual inline const char* type() const { return "Deconvolution"; }
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
@@ -79,6 +78,9 @@ class CuDNNDeconvolutionLayer : public DeconvolutionLayer<Dtype> {
   size_t workspaceSizeInBytes;  // size of underlying storage
   void *workspaceData;  // underlying storage
   void **workspace;  // aliases into workspaceData
+
+  int kernel_w_;
+  int kernel_h_;
 };
 #endif
 
