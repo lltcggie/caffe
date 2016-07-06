@@ -106,12 +106,13 @@ class Caffe {
  public:
   ~Caffe();
 
+  enum Brew { CPU, GPU };
+
   // Thread local context for Caffe. Moved to common.cpp instead of
   // including boost/thread.hpp to avoid a boost/NVCC issues (#1009, #1010)
   // on OSX. Also fails on Linux with CUDA 7.0.18.
   static Caffe& Get();
-
-  enum Brew { CPU, GPU };
+  static Caffe& Get(Brew m);
 
   // This random number generator facade hides boost and CUDA rng
   // implementation from one another (for cross-platform compatibility).
@@ -135,8 +136,10 @@ class Caffe {
     return *(Get().random_generator_);
   }
 #ifndef CPU_ONLY
-  inline static cublasHandle_t cublas_handle() { return Get().cublas_handle_; }
+  void init_cu_handle();
+  inline static cublasHandle_t cublas_handle() { Get().init_cu_handle(); return Get().cublas_handle_; }
   inline static curandGenerator_t curand_generator() {
+    Get().init_cu_handle();
     return Get().curand_generator_;
   }
 #endif
@@ -148,7 +151,7 @@ class Caffe {
   // into the program since that may cause allocation of pinned memory being
   // freed in a non-pinned way, which may cause problems - I haven't verified
   // it personally but better to note it here in the header file.
-  inline static void set_mode(Brew mode) { Get().mode_ = mode; }
+  static void set_mode(Brew mode);
   // Sets the random seed of both boost and curand
   static void set_random_seed(const unsigned int seed);
   // Sets the device. Since we have cublas and curand stuff, set device also
@@ -187,6 +190,7 @@ class Caffe {
  private:
   // The private constructor to avoid duplicate instantiation.
   Caffe();
+  Caffe(Brew m);
 
   DISABLE_COPY_AND_ASSIGN(Caffe);
 };
