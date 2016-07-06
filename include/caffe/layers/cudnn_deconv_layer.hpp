@@ -60,6 +60,9 @@ class CuDNNDeconvolutionLayer : public DeconvolutionLayer<Dtype> {
   size_t workspaceSizeInBytes;  // size of underlying storage
   void *workspaceData;  // underlying storage
   void **workspace;  // aliases into workspaceData
+  
+  int kernel_w_;
+  int kernel_h_;
 };
 #endif
 

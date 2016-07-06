@@ -16,6 +16,10 @@ namespace caffe {
 
 // Make sure each thread can have different values.
 static boost::thread_specific_ptr<Caffe> thread_instance_;
+static int(*GetcuDNNAlgorithmFunc_)(const char *layer_name, int num_input, int num_output, int batch_size,
+	int width, int height, int kernel_w, int kernel_h, int pad_w, int pad_h, int stride_w, int stride_h) = nullptr;
+static void(*SetcuDNNAlgorithmFunc_)(int algo, const char *layer_name, int num_input, int num_output, int batch_size,
+	int width, int height, int kernel_w, int kernel_h, int pad_w, int pad_h, int stride_w, int stride_h) = nullptr;
 
 Caffe& Caffe::Get() {
   if (!thread_instance_.get()) {
@@ -293,6 +297,36 @@ int Caffe::FindDevice(const int start_id) {
     if (CheckDevice(i)) return i;
   }
   return -1;
+}
+
+void Caffe::SetGetcuDNNAlgorithmFunc(int(*func)(const char *layer_name, int num_input, int num_output, int batch_size,
+	int width, int height, int kernel_w, int kernel_h, int pad_w, int pad_h, int stride_w, int stride_h))
+{
+	GetcuDNNAlgorithmFunc_ = func;
+}
+
+int Caffe::GetcuDNNAlgorithm(const char *layer_name, int num_input, int num_output, int batch_size,
+	int width, int height, int kernel_w, int kernel_h, int pad_w, int pad_h, int stride_w, int stride_h)
+{
+	if (!GetcuDNNAlgorithmFunc_)
+		return -1;
+
+	return GetcuDNNAlgorithmFunc_(layer_name, num_input, num_output, batch_size, width, height, kernel_w, kernel_h, pad_w, pad_h, stride_w, stride_h);
+}
+
+void Caffe::SetSetcuDNNAlgorithmFunc(void(*func)(int algo, const char *layer_name, int num_input, int num_output, int batch_size,
+	int width, int height, int kernel_w, int kernel_h, int pad_w, int pad_h, int stride_w, int stride_h))
+{
+	SetcuDNNAlgorithmFunc_ = func;
+}
+
+void Caffe::SetcuDNNAlgorithm(int algo, const char *layer_name, int num_input, int num_output, int batch_size,
+	int width, int height, int kernel_w, int kernel_h, int pad_w, int pad_h, int stride_w, int stride_h)
+{
+	if (!SetcuDNNAlgorithmFunc_)
+		return;
+
+	SetcuDNNAlgorithmFunc_(algo, layer_name, num_input, num_output, batch_size, width, height, kernel_w, kernel_h, pad_w, pad_h, stride_w, stride_h);
 }
 
 class Caffe::RNG::Generator {
