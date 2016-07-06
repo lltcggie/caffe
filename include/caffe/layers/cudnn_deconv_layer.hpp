@@ -7,7 +7,7 @@
 #include "caffe/layer.hpp"
 #include "caffe/proto/caffe.pb.h"
 
-#include "caffe/layers/conv_layer.hpp"
+#include "caffe/layers/deconv_layer.hpp"
 
 namespace caffe {
 
@@ -27,10 +27,10 @@ namespace caffe {
  * faster as long as it fits in memory.
 */
 template <typename Dtype>
-class CuDNNDeconvolutionLayer : public ConvolutionLayer<Dtype> {
+class CuDNNDeconvolutionLayer : public DeconvolutionLayer<Dtype> {
  public:
   explicit CuDNNDeconvolutionLayer(const LayerParameter& param)
-      : ConvolutionLayer<Dtype>(param), handles_setup_(false) {}
+      : DeconvolutionLayer<Dtype>(param), handles_setup_(false) {}
   virtual inline const char* type() const { return "Deconvolution"; }
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
@@ -43,8 +43,6 @@ class CuDNNDeconvolutionLayer : public ConvolutionLayer<Dtype> {
       const vector<Blob<Dtype>*>& top);
   virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
       const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
-  virtual inline bool reverse_dimensions() { return true; }
-  virtual void compute_output_shape();
 
   bool handles_setup_;
   cudnnHandle_t* handle_;

@@ -12,26 +12,9 @@ namespace caffe {
 #define CUDNN_STREAMS_PER_GROUP 1
 
 template <typename Dtype>
-void CuDNNDeconvolutionLayer<Dtype>::compute_output_shape() {
-  const int* kernel_shape_data = this->kernel_shape_.cpu_data();
-  const int* stride_data = this->stride_.cpu_data();
-  const int* pad_data = this->pad_.cpu_data();
-  const int* dilation_data = this->dilation_.cpu_data();
-  this->output_shape_.clear();
-  for (int i = 0; i < this->num_spatial_axes_; ++i) {
-    // i + 1 to skip channel axis
-    const int input_dim = this->input_shape(i + 1);
-    const int kernel_extent = dilation_data[i] * (kernel_shape_data[i] - 1) + 1;
-    const int output_dim = stride_data[i] * (input_dim - 1)
-        + kernel_extent - 2 * pad_data[i];
-    this->output_shape_.push_back(output_dim);
-  }
-}
-
-template <typename Dtype>
 void CuDNNDeconvolutionLayer<Dtype>::LayerSetUp(
     const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
-  ConvolutionLayer<Dtype>::LayerSetUp(bottom, top);
+  DeconvolutionLayer<Dtype>::LayerSetUp(bottom, top);
   // Initialize CUDA streams and cuDNN.
   stream_         = new cudaStream_t[this->group_ * CUDNN_STREAMS_PER_GROUP];
   handle_         = new cudnnHandle_t[this->group_ * CUDNN_STREAMS_PER_GROUP];
@@ -117,7 +100,7 @@ void CuDNNDeconvolutionLayer<Dtype>::LayerSetUp(
 template <typename Dtype>
 void CuDNNDeconvolutionLayer<Dtype>::Reshape(
     const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
-  ConvolutionLayer<Dtype>::Reshape(bottom, top);
+  DeconvolutionLayer<Dtype>::Reshape(bottom, top);
   CHECK_EQ(2, this->num_spatial_axes_)
       << "CuDNNDeconvolutionLayer input must have 2 spatial axes "
       << "(e.g., height and width). "
