@@ -10,6 +10,7 @@
 #include "caffe/common.hpp"
 #include "caffe/util/rng.hpp"
 #include "caffe/util/msvc.hpp"
+#include "caffe/util/cudnn_func.hpp"
 
 namespace caffe {
 

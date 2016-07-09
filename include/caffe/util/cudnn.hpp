@@ -12,7 +12,7 @@
 
 #define CUDNN_CHECK(condition) \
   do { \
-    cudnnStatus_t status = condition; \
+    cudnnStatus_t status = (condition); \
     CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << " "\
       << cudnnGetErrorString(status); \
   } while (0)
