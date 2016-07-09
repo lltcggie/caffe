@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "caffe/layers/cudnn_conv_layer.hpp"
+#include "caffe/util/cudnn_func.hpp"
 
 namespace caffe {
 
@@ -146,6 +147,8 @@ void CuDNNConvolutionLayer<Dtype>::Reshape(
 	  // planning strategy and a rewrite of Caffe's GPU memory mangagement
 	  size_t workspace_limit_bytes = 8 * 1024 * 1024;
 
+	  bool isNotFindFwd = false;
+
 	  for (int i = 0; i < bottom.size(); i++) {
 		  cudnn::setTensor4dDesc<Dtype>(&bottom_descs_[i],
 			  this->num_,
@@ -167,31 +170,12 @@ void CuDNNConvolutionLayer<Dtype>::Reshape(
 			  fwd_algo_[i] = (cudnnConvolutionFwdAlgo_t)algo;
 		  else
 		  {
-#if 0
-			  // choose forward and backward algorithms + workspace(s)
-			  CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(handle_[0],
-				  bottom_descs_[i],
-				  filter_desc_,
-				  conv_descs_[i],
-				  top_descs_[i],
-				  CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
-				  workspace_limit_bytes,
-				  &fwd_algo_[i]));
-#else
-			  int count;
-			  cudnnConvolutionFwdAlgoPerf_t choosen_algo_perf;
-			  // choose forward and backward algorithms + workspace(s)
-			  CUDNN_CHECK(cudnnFindConvolutionForwardAlgorithm(handle_[0],
-				  bottom_descs_[i],
-				  filter_desc_,
-				  conv_descs_[i],
-				  top_descs_[i],
-				  1,
-				  &count,
-				  &choosen_algo_perf));
+			  // cuDNNのアルゴリズムのキャッシュ取得はループ中で変化しないパラメータのみを元に取得するので、今回の要素だけ計測すれば十分
+			  cudnnConvolutionFwdAlgo_t algo;
+			  CUDNN_CHECK(cudnn::FindConvolutionForwardAlgorithmEx(&handle_[i], &bottom_descs_[i], &bottom[i],
+				  filter_desc_, this->blobs_[0].get(), &conv_descs_[i], &top_descs_[i], &top[i], &algo, 1, dev_no_));
 
-			  fwd_algo_[i] = choosen_algo_perf.algo;
-#endif
+			  fwd_algo_[i] = algo;
 			  Caffe::SetcuDNNAlgorithm((int)fwd_algo_[i], type(), this->channels_, this->num_output_, this->num_,
 				  width, height, kernel_w_, kernel_h_, pad_w, pad_h, stride_w, stride_h);
 		  }

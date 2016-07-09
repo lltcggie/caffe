@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "caffe/layers/cudnn_deconv_layer.hpp"
+#include "caffe/util/cudnn_func.hpp"
 
 namespace caffe {
 
@@ -218,28 +219,14 @@ void CuDNNDeconvolutionLayer<Dtype>::Reshape(
       bwd_data_algo_[i] = (cudnnConvolutionBwdDataAlgo_t)algo;
     }
     else {
-#if 0
-      // choose backward algo for data
-      CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(
-          handle_[0],
-          filter_desc_,
-          bottom_descs_[i],
-          conv_descs_[i],
-          top_descs_[i],
-          CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT,
-          workspace_limit_bytes,
-          &bwd_data_algo_[i]));
-#else
-      int count;
-      cudnnConvolutionBwdDataAlgoPerf_t choosen_algo_perf;
+      // cuDNN�̃A���S���Y���̃L���b�V���擾�̓��[�v���ŕω����Ȃ��p�����[�^�݂̂�Ɏ擾����̂ŁA����̗v�f�����v������Ώ\��
+			cudnnConvolutionBwdDataAlgo_t algo;
+			CUDNN_CHECK(cudnn::FindConvolutionBackwardDataAlgorithmEx(
+          &handle_[i], filter_desc_, this->blobs_[0].get(), &bottom_descs_[i], &bottom[i],
+				  &conv_descs_[i], &top_descs_[i], &top[i], &algo, 1, dev_no_));
 
-      // choose backward algo for data
-      CUDNN_CHECK(cudnnFindConvolutionBackwardDataAlgorithm(
-          handle_[0], filter_desc_, bottom_descs_[i], conv_descs_[i], top_descs_[i],
-          1, &count, &choosen_algo_perf));
+		  bwd_data_algo_[i] = algo;
 
-      bwd_data_algo_[i] = choosen_algo_perf.algo;
-#endif
       Caffe::SetcuDNNAlgorithm((int)bwd_data_algo_[i], type(), this->channels_, this->num_output_, this->num_,
                                width, height, kernel_w_, kernel_h_, pad_w, pad_h, stride_w, stride_h);
     }
