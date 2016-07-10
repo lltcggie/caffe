@@ -6,12 +6,10 @@
 namespace caffe {
 namespace cudnn {
 
-cudnnWorkSpace cudnnWorkSpace::mObj;
-
 const size_t AlgoMax = 16;
 
 template <typename Perf_t, typename Algo_t>
-cudnnStatus_t FindAlgorithmEx(int dev_no_,
+cudnnStatus_t FindAlgorithmEx(
 	std::function<cudnnStatus_t(size_t i, Perf_t * algo, size_t algoSize, int *count, void *workspace, size_t workspaceSize, void *weights)> func,
 	Algo_t algos[], int num, int weights_size = -1)
 {
@@ -37,32 +35,43 @@ cudnnStatus_t FindAlgorithmEx(int dev_no_,
 		size_t free = 0, total = 0;
 		CUDA_CHECK(cudaMemGetInfo(&free, &total));
 
-		const size_t limitBase = free * 0.9;
-		const size_t limit = limitBase + cudnn::cudnnWorkSpace::Get().GetWorkSpaceSize(dev_no_);
+		const size_t limit = free * 0.9;
 
 		size_t maxWorkSpace = 0;
-		size_t maxWorkSpaceBase = 0;
 		for (size_t c = 0; c < count; c++)
 		{
 			const auto &elm = algo[c];
 			if (elm.status == CUDNN_STATUS_SUCCESS || elm.status == CUDNN_STATUS_ALLOC_FAILED)
 			{
 				maxWorkSpace = std::max(maxWorkSpace, std::min(elm.memory, limit));
-				maxWorkSpaceBase = std::max(maxWorkSpaceBase, std::min(elm.memory, limitBase));
 			}
 		}
 
 		void *workspaceData = nullptr;
-		if (cudnn::cudnnWorkSpace::Get().GetWorkSpace(maxWorkSpace, &workspaceData, dev_no_) != cudaSuccess)
+		if (cudaMalloc(&workspaceData, maxWorkSpace) != cudaSuccess)
 		{
-			maxWorkSpace = maxWorkSpaceBase;
-			cudnn::cudnnWorkSpace::Get().GetWorkSpace(maxWorkSpace, &workspaceData, dev_no_);
+			const size_t BaseWorkSpace = maxWorkSpace;
+
+			cudaError_t e;
+			// 確保できなかったらどんどん使用メモリを減らして確保してみる
+			for (int i = 8; i >= 0; i--)
+			{
+				maxWorkSpace = BaseWorkSpace * i / 10;
+				e = cudaMalloc(&workspaceData, maxWorkSpace);
+				if (e == cudaSuccess)
+					break;
+			}
+
+			CUDA_CHECK(e);
 		}
 
 		ret = func(i, algo.data(), algo.size(), &count, workspaceData, maxWorkSpace, weights);
 
 		if (weights)
 			cudaFree(weights);
+
+		if (workspaceData)
+			cudaFree(workspaceData);
 
 		if (ret != CUDNN_STATUS_SUCCESS)
 			return ret;
@@ -71,8 +80,6 @@ cudnnStatus_t FindAlgorithmEx(int dev_no_,
 
 		lastWorkSpace = std::max(lastWorkSpace, algo[0].memory);
 	}
-
-	cudnn::cudnnWorkSpace::Get().SetLimitWorkSpace(lastWorkSpace, nullptr, dev_no_);
 
 	return CUDNN_STATUS_SUCCESS;
 }
@@ -88,8 +95,7 @@ cudnnStatus_t FindConvolutionForwardAlgorithmEx(
 	const cudnnTensorDescriptor_t       top_descs[],
 	Blob<Dtype>*const*                  top,
 	cudnnConvolutionFwdAlgo_t           algos[],
-	int                                 count,
-	int                                 dev_no)
+	int                                 count)
 {
 	auto func = [&](size_t i, cudnnConvolutionFwdAlgoPerf_t * algo, size_t algoSize, int *count, void *workspace, size_t workspaceSize, void *weights)
 	{
@@ -106,7 +112,7 @@ cudnnStatus_t FindConvolutionForwardAlgorithmEx(
 			algo, workspace, workspaceSize);
 	};
 
-	return FindAlgorithmEx<cudnnConvolutionFwdAlgoPerf_t, cudnnConvolutionFwdAlgo_t>(dev_no, func, algos, count);
+	return FindAlgorithmEx<cudnnConvolutionFwdAlgoPerf_t, cudnnConvolutionFwdAlgo_t>(func, algos, count);
 }
 
 template <typename Dtype>
@@ -120,8 +126,7 @@ cudnnStatus_t FindConvolutionBackwardFilterAlgorithmEx(
 	const cudnnFilterDescriptor_t       filter_desc,
 	int                                 weights_size,
 	cudnnConvolutionBwdFilterAlgo_t     algos[],
-	int                                 count,
-	int                                 dev_no)
+	int                                 count)
 {
 	auto func = [&](size_t i, cudnnConvolutionBwdFilterAlgoPerf_t * algo, size_t algoSize, int *count, void *workspace, size_t workspaceSize, void *weights)
 	{
@@ -138,7 +143,7 @@ cudnnStatus_t FindConvolutionBackwardFilterAlgorithmEx(
 			algo, workspace, workspaceSize);
 	};
 
-	return FindAlgorithmEx<cudnnConvolutionBwdFilterAlgoPerf_t, cudnnConvolutionBwdFilterAlgo_t>(dev_no, func, algos, count, weights_size);
+	return FindAlgorithmEx<cudnnConvolutionBwdFilterAlgoPerf_t, cudnnConvolutionBwdFilterAlgo_t>(func, algos, count, weights_size);
 }
 
 template <typename Dtype>
@@ -152,8 +157,7 @@ cudnnStatus_t FindConvolutionBackwardDataAlgorithmEx(
 	const cudnnTensorDescriptor_t       bottom_descs[],
 	Blob<Dtype>*const*                  bottom,
 	cudnnConvolutionBwdDataAlgo_t       algos[],
-	int                                 count,
-	int                                 dev_no)
+	int                                 count)
 {
 	auto func = [&](size_t i, cudnnConvolutionBwdDataAlgoPerf_t * algo, size_t algoSize, int *count, void *workspace, size_t workspaceSize, void *weights)
 	{
@@ -170,7 +174,7 @@ cudnnStatus_t FindConvolutionBackwardDataAlgorithmEx(
 			algo, workspace, workspaceSize);
 	};
 
-	return FindAlgorithmEx<cudnnConvolutionBwdDataAlgoPerf_t, cudnnConvolutionBwdDataAlgo_t>(dev_no, func, algos, count);
+	return FindAlgorithmEx<cudnnConvolutionBwdDataAlgoPerf_t, cudnnConvolutionBwdDataAlgo_t>(func, algos, count);
 }
 
 
@@ -185,8 +189,7 @@ cudnnStatus_t FindConvolutionForwardAlgorithmEx<float>(
 	const cudnnTensorDescriptor_t       top_descs[],
 	Blob<float>*const*                  top,
 	cudnnConvolutionFwdAlgo_t           algos[],
-	int                                 count,
-	int                                 dev_no);
+	int                                 count);
 
 template
 cudnnStatus_t FindConvolutionForwardAlgorithmEx<double>(
@@ -199,8 +202,7 @@ cudnnStatus_t FindConvolutionForwardAlgorithmEx<double>(
 	const cudnnTensorDescriptor_t       top_descs[],
 	Blob<double>*const*                  top,
 	cudnnConvolutionFwdAlgo_t           algos[],
-	int                                 count,
-	int                                 dev_no);
+	int                                 count);
 
 template
 cudnnStatus_t FindConvolutionBackwardFilterAlgorithmEx<float>(
@@ -213,8 +215,7 @@ cudnnStatus_t FindConvolutionBackwardFilterAlgorithmEx<float>(
 	const cudnnFilterDescriptor_t       filter_desc,
 	int                                 weights_size,
 	cudnnConvolutionBwdFilterAlgo_t     algos[],
-	int                                 count,
-	int                                 dev_no);
+	int                                 count);
 
 template
 cudnnStatus_t FindConvolutionBackwardFilterAlgorithmEx<double>(
@@ -227,8 +228,7 @@ cudnnStatus_t FindConvolutionBackwardFilterAlgorithmEx<double>(
 	const cudnnFilterDescriptor_t       filter_desc,
 	int                                 weights_size,
 	cudnnConvolutionBwdFilterAlgo_t     algos[],
-	int                                 count,
-	int                                 dev_no);
+	int                                 count);
 
 template
 cudnnStatus_t FindConvolutionBackwardDataAlgorithmEx<float>(
@@ -241,8 +241,7 @@ cudnnStatus_t FindConvolutionBackwardDataAlgorithmEx<float>(
 	const cudnnTensorDescriptor_t       bottom_descs[],
 	Blob<float>*const*                  bottom,
 	cudnnConvolutionBwdDataAlgo_t       algos[],
-	int                                 count,
-	int                                 dev_no);
+	int                                 count);
 
 template
 cudnnStatus_t FindConvolutionBackwardDataAlgorithmEx<double>(
@@ -255,8 +254,7 @@ cudnnStatus_t FindConvolutionBackwardDataAlgorithmEx<double>(
 	const cudnnTensorDescriptor_t       bottom_descs[],
 	Blob<double>*const*                  bottom,
 	cudnnConvolutionBwdDataAlgo_t       algos[],
-	int                                 count,
-	int                                 dev_no);
+	int                                 count);
 
 }  // namespace cudnn
 }  // namespace caffe
