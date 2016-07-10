@@ -215,17 +215,29 @@ void CuDNNDeconvolutionLayer<Dtype>::Reshape(
         type(), this->channels_, this->num_output_, this->num_,
         width, height, kernel_w_, kernel_h_, pad_w, pad_h, stride_w, stride_h);
 
-    if (algo >= 0) {}
+    if (algo >= 0) {
       bwd_data_algo_[i] = (cudnnConvolutionBwdDataAlgo_t)algo;
     }
     else {
-      // cuDNNï¿½ÌƒAï¿½ï¿½ï¿½Sï¿½ï¿½ï¿½Yï¿½ï¿½ï¿½ÌƒLï¿½ï¿½ï¿½bï¿½Vï¿½ï¿½ï¿½æ“¾ï¿½Íƒï¿½ï¿½[ï¿½vï¿½ï¿½ï¿½Å•Ï‰ï¿½ï¿½ï¿½ï¿½È‚ï¿½ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½Ì‚Ý‚ï¿½ÉŽæ“¾ï¿½ï¿½ï¿½ï¿½Ì‚ÅAï¿½ï¿½ï¿½ï¿½Ì—vï¿½fï¿½ï¿½ï¿½ï¿½ï¿½vï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î\ï¿½ï¿½
-			cudnnConvolutionBwdDataAlgo_t algo;
-			CUDNN_CHECK(cudnn::FindConvolutionBackwardDataAlgorithmEx(
-          &handle_[i], filter_desc_, this->blobs_[0].get(), &bottom_descs_[i], &bottom[i],
-				  &conv_descs_[i], &top_descs_[i], &top[i], &algo, 1, dev_no_));
+      if (this->workspaceData) {
+        // Œv‘ª—pƒ[ƒNƒXƒy[ƒXŠm•Û‚Ì‚½‚ß‚ÉŒ»Ý‚Ìƒ[ƒNƒXƒy[ƒXŠJ•ú
+        cudaFree(this->workspaceData);
 
-		  bwd_data_algo_[i] = algo;
+        workspaceData = NULL;
+        workspaceSizeInBytes = 0;
+
+        for (int g = 0; g < (this->group_ * CUDNN_STREAMS_PER_GROUP); g++) {
+          workspace[g] = NULL;
+        }
+      }
+
+      // cuDNN‚ÌƒAƒ‹ƒSƒŠƒYƒ€‚ÌƒLƒƒƒbƒVƒ…Žæ“¾‚Íƒ‹[ƒv’†‚Å•Ï‰»‚µ‚È‚¢ƒpƒ‰ƒ[ƒ^‚Ì‚Ý‚ðŒ³‚ÉŽæ“¾‚·‚é‚Ì‚ÅA¡‰ñ‚Ì—v‘f‚¾‚¯Œv‘ª‚·‚ê‚Î\•ª
+      cudnnConvolutionBwdDataAlgo_t algo;
+      CUDNN_CHECK(cudnn::FindConvolutionBackwardDataAlgorithmEx(
+          &handle_[i], filter_desc_, this->blobs_[0].get(), &bottom_descs_[i], &bottom[i],
+          &conv_descs_[i], &top_descs_[i], &top[i], &algo, 1));
+
+      bwd_data_algo_[i] = algo;
 
       Caffe::SetcuDNNAlgorithm((int)bwd_data_algo_[i], type(), this->channels_, this->num_output_, this->num_,
                                width, height, kernel_w_, kernel_h_, pad_w, pad_h, stride_w, stride_h);
