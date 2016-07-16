@@ -298,7 +298,7 @@ void CuDNNDeconvolutionLayer<Dtype>::Reshape(
 
 		  // if we succeed in the allocation, set pointer aliases for workspaces
 		  for (int g = 0; g < (this->group_ * CUDNN_STREAMS_PER_GROUP); g++) {
-			  workspace[g] = reinterpret_cast<wchar_t *>(workspaceData)+g*max_workspace;
+			  workspace[g] = reinterpret_cast<char *>(workspaceData)+g*max_workspace;
 		  }
 	  }
   }
