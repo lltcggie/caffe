@@ -28,10 +28,24 @@ if(MSVC)
         PATHS ${GFLAGS_ROOT_DIR}
         PATH_SUFFIXES Release)
 
+    if(NOT GFLAGS_LIBRARY_RELEASE)
+        find_library(GFLAGS_LIBRARY_RELEASE
+            NAMES gflags
+            PATHS ${GFLAGS_ROOT_DIR}
+            PATH_SUFFIXES Release)
+    endif()
+
     find_library(GFLAGS_LIBRARY_DEBUG
         NAMES libgflags-debug
         PATHS ${GFLAGS_ROOT_DIR}
         PATH_SUFFIXES Debug)
+
+    if(NOT GFLAGS_LIBRARY_DEBUG)
+        find_library(GFLAGS_LIBRARY_DEBUG
+            NAMES gflagsd
+            PATHS ${GFLAGS_ROOT_DIR}
+            PATH_SUFFIXES Debug)
+    endif()
 
     set(GFLAGS_LIBRARY optimized ${GFLAGS_LIBRARY_RELEASE} debug ${GFLAGS_LIBRARY_DEBUG})
 else()
@@ -39,7 +53,6 @@ else()
 endif()
 
 find_package_handle_standard_args(GFlags DEFAULT_MSG GFLAGS_INCLUDE_DIR GFLAGS_LIBRARY)
-
 
 if(GFLAGS_FOUND)
     set(GFLAGS_INCLUDE_DIRS ${GFLAGS_INCLUDE_DIR})

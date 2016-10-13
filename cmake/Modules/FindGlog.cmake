@@ -26,9 +26,23 @@ if(MSVC)
         PATHS ${GLOG_ROOT_DIR}
         PATH_SUFFIXES Release)
 
+    if(NOT GLOG_LIBRARY_RELEASE)
+        find_library(GLOG_LIBRARY_RELEASE
+            NAMES glog
+            PATHS ${GLOG_ROOT_DIR}
+            PATH_SUFFIXES Release)
+    endif()
+
     find_library(GLOG_LIBRARY_DEBUG libglog_static
         PATHS ${GLOG_ROOT_DIR}
         PATH_SUFFIXES Debug)
+
+    if(NOT GLOG_LIBRARY_DEBUG)
+        find_library(GLOG_LIBRARY_DEBUG
+            NAMES glogd
+            PATHS ${GLOG_ROOT_DIR}
+            PATH_SUFFIXES Debug)
+    endif()
 
     set(GLOG_LIBRARY optimized ${GLOG_LIBRARY_RELEASE} debug ${GLOG_LIBRARY_DEBUG})
 else()
