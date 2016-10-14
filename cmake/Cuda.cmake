@@ -178,10 +178,13 @@ function(detect_cuDNN)
             PATHS ${CUDNN_ROOT} $ENV{CUDNN_ROOT} "${CUDNN_ROOT}/include" "$ENV{CUDNN_ROOT}/include" ${CUDA_TOOLKIT_INCLUDE}
             DOC "Path to cuDNN include directory." )
 
-  if(NOT MSVC)
-    set(FIND_CUDNN_LIBRARY_NAME libcudnn.so) # libcudnn_static.a
-  else()
+  # dynamic libs have different suffix in mac and linux
+  if(APPLE)
+    set(CUDNN_LIB_NAME "libcudnn.dylib")
+  elseif(MSVC)
     set(FIND_CUDNN_LIBRARY_NAME cudnn.lib)
+  else()
+    set(CUDNN_LIB_NAME "libcudnn.so")
   endif()
 
   get_filename_component(__libpath_hist ${CUDA_CUDART_LIBRARY} PATH)
