@@ -15,7 +15,7 @@ if(POLICY CMP0054)
 endif()
 
 # ---[ Caffe project
-project(Caffe C CXX)
+project(Caffe2 LANGUAGES CXX C CUDA)
 
 # ---[ Caffe version
 set(CAFFE_TARGET_VERSION "1.0.0" CACHE STRING "Caffe logical version")
@@ -112,15 +112,15 @@ include_directories(${PROJECT_BINARY_DIR})
 #
 # list(REMOVE_ITEM ...) invocations remove PRIVATE and PUBLIC keywords from collected definitions and include pathes
 if(HAVE_CUDA)
-  # pass include pathes to cuda_include_directories()
+  # pass include pathes to include_directories()
   set(Caffe_ALL_INCLUDE_DIRS ${Caffe_INCLUDE_DIRS})
   list(REMOVE_ITEM Caffe_ALL_INCLUDE_DIRS PRIVATE PUBLIC)
-  cuda_include_directories(${Caffe_INCLUDE_DIR} ${Caffe_SRC_DIR} ${Caffe_ALL_INCLUDE_DIRS})
+  include_directories(${Caffe_INCLUDE_DIR} ${Caffe_SRC_DIR} ${Caffe_ALL_INCLUDE_DIRS})
 
   # add definitions to nvcc flags directly
   set(Caffe_ALL_DEFINITIONS ${Caffe_DEFINITIONS})
   list(REMOVE_ITEM Caffe_ALL_DEFINITIONS PRIVATE PUBLIC)
-  list(APPEND CUDA_NVCC_FLAGS ${Caffe_ALL_DEFINITIONS})
+  SET(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${Caffe_ALL_DEFINITIONS}")
 endif()
 
 # ---[ Subdirectories

@@ -127,18 +127,18 @@ function(caffe_select_nvcc_arch_flags out_variable)
   foreach(__arch ${__cuda_arch_bin})
     if(__arch MATCHES "([0-9]+)\\(([0-9]+)\\)")
       # User explicitly specified PTX for the concrete BIN
-      list(APPEND __nvcc_flags -gencode arch=compute_${CMAKE_MATCH_2},code=sm_${CMAKE_MATCH_1})
+      SET(__nvcc_flags "${__nvcc_flags} -gencode arch=compute_${CMAKE_MATCH_2},code=sm_${CMAKE_MATCH_1}")
       list(APPEND __nvcc_archs_readable sm_${CMAKE_MATCH_1})
     else()
       # User didn't explicitly specify PTX for the concrete BIN, we assume PTX=BIN
-      list(APPEND __nvcc_flags -gencode arch=compute_${__arch},code=sm_${__arch})
+      SET(__nvcc_flags "${__nvcc_flags} -gencode arch=compute_${__arch},code=sm_${__arch}")
       list(APPEND __nvcc_archs_readable sm_${__arch})
     endif()
   endforeach()
 
   # Tell NVCC to add PTX intermediate code for the specified architectures
   foreach(__arch ${__cuda_arch_ptx})
-    list(APPEND __nvcc_flags -gencode arch=compute_${__arch},code=compute_${__arch})
+    SET(__nvcc_flags "${__nvcc_flags} -gencode arch=compute_${__arch},code=compute_${__arch}")
     list(APPEND __nvcc_archs_readable compute_${__arch})
   endforeach()
 
@@ -161,11 +161,11 @@ macro(caffe_cuda_compile objlist_variable)
   endforeach()
 
   if(UNIX OR APPLE)
-    list(APPEND CUDA_NVCC_FLAGS -Xcompiler -fPIC)
+    SET(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -fPIC")
   endif()
 
   if(APPLE)
-    list(APPEND CUDA_NVCC_FLAGS -Xcompiler -Wno-unused-function)
+    SET(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler -Wno-unused-function")
   endif()
 
   cuda_compile(cuda_objcs ${ARGN})
@@ -281,7 +281,7 @@ endif()
 
 # setting nvcc arch flags
 caffe_select_nvcc_arch_flags(NVCC_FLAGS_EXTRA)
-list(APPEND CUDA_NVCC_FLAGS ${NVCC_FLAGS_EXTRA})
+SET(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${NVCC_FLAGS_EXTRA}")
 message(STATUS "Added CUDA NVCC flags for: ${NVCC_FLAGS_EXTRA_readable}")
 
 # Boost 1.55 workaround, see https://svn.boost.org/trac/boost/ticket/9392 or
@@ -289,12 +289,12 @@ message(STATUS "Added CUDA NVCC flags for: ${NVCC_FLAGS_EXTRA_readable}")
 if(Boost_VERSION EQUAL 105500)
   message(STATUS "Cuda + Boost 1.55: Applying noinline work around")
   # avoid warning for CMake >= 2.8.12
-  set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} \"-DBOOST_NOINLINE=__attribute__((noinline))\" ")
+  SET(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} \"-DBOOST_NOINLINE=__attribute__((noinline))\" ")
 endif()
 
 # disable some nvcc diagnostic that apears in boost, glog, glags, opencv, etc.
 foreach(diag cc_clobber_ignored integer_sign_change useless_using_declaration set_but_not_used)
-  list(APPEND CUDA_NVCC_FLAGS -Xcudafe --diag_suppress=${diag})
+  SET(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcudafe --diag_suppress=${diag}")
 endforeach()
 
 # setting default testing device

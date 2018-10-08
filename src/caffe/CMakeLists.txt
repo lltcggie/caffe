@@ -22,35 +22,7 @@ if(MSVC AND NOT BUILD_SHARED_LIBS)
 endif()
 
 if(HAVE_CUDA)
-  # collect any compile definitions from imported targets. This important so that
-  # preprocessor macros such as GLOG_NO_ABBREVIATED_SEVERITIES are defined.
-  # this is required since CUDA macros do not honor the INTERFACE_COMPILE_DEFINITIONS
-  unset(__cuda_options)
-  foreach(__lib ${Caffe_LINKER_LIBS})
-    if(TARGET ${__lib})
-      get_target_property(__interface_compile_definitions ${__lib} INTERFACE_COMPILE_DEFINITIONS)
-      if(__interface_compile_definitions)
-        foreach(__def ${__interface_compile_definitions})
-          # espace any parentheses because they are failing the build
-          # see cmake issue https://cmake.org/Bug/view.php?id=16065
-          string(REPLACE "(" "\\\(" __def_escaped ${__def})
-          string(REPLACE ")" "\\\)" __def_escaped ${__def_escaped})
-          # add the required -D flag
-          list(APPEND __cuda_options "-D${__def_escaped}")
-        endforeach()
-      endif()
-    endif()
-  endforeach()
-  list(APPEND __cuda_options ${_caffe_static_compile_def})
-  # add the required definitions
-  add_definitions(${__cuda_options})
-  # it seems that using the OPTIONS argument like:
-  # caffe_cuda_compile(cuda_objs ${cuda} OPTIONS ${__cuda_options})
-  # does not work. Use add/remove_definitions instead.
-  caffe_cuda_compile(cuda_objs ${cuda})
-  # remove them
-  remove_definitions(${__cuda_options})
-  list(APPEND srcs ${cuda_objs} ${cuda})
+  list(APPEND srcs ${cuda})
 endif()
 
 add_library(caffe ${srcs})
