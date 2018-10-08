@@ -24,6 +24,18 @@ function(caffe_generate_export_configs)
     set(HAVE_CUDA FALSE)
   endif()
 
+  set(HDF5_IMPORTED OFF)
+  foreach(_lib ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+    if(TARGET ${_lib})
+      set(HDF5_IMPORTED ON)
+    endif()
+  endforeach()
+
+  # This code is taken from https://github.com/sh1r0/caffe-android-lib
+  if(USE_HDF5)
+    list(APPEND Caffe_DEFINITIONS -DUSE_HDF5)
+  endif()
+
   set(GFLAGS_IMPORTED OFF)
   foreach(_lib ${GFLAGS_LIBRARIES})
     if(TARGET ${_lib})
@@ -38,12 +50,6 @@ function(caffe_generate_export_configs)
     endif()
   endforeach()
 
-  set(HDF5_IMPORTED OFF)
-  foreach(_lib ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
-    if(TARGET ${_lib})
-      set(HDF5_IMPORTED ON)
-    endif()
-  endforeach()
 
   set(LMDB_IMPORTED OFF)
   if(USE_LMDB)
