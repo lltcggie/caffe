@@ -9,7 +9,12 @@ if DEFINED APPVEYOR (
     if NOT DEFINED CPU_ONLY set CPU_ONLY=1
     if NOT DEFINED CUDA_ARCH_NAME set CUDA_ARCH_NAME=Auto
     if NOT DEFINED CMAKE_CONFIG set CMAKE_CONFIG=Release
+    if NOT DEFINED USE_CUDNN set USE_CUDNN=0
     if NOT DEFINED USE_NCCL set USE_NCCL=0
+    if NOT DEFINED USE_OPENCV set USE_OPENCV=1
+    if NOT DEFINED USE_LEVELDB set USE_LEVELDB=1
+    if NOT DEFINED USE_LMDB set USE_LMDB=1
+    if NOT DEFINED USE_HDF5 set USE_HDF5=1
     if NOT DEFINED CMAKE_BUILD_SHARED_LIBS set CMAKE_BUILD_SHARED_LIBS=0
     if NOT DEFINED PYTHON_VERSION set PYTHON_VERSION=2
     if NOT DEFINED BUILD_PYTHON set BUILD_PYTHON=1
@@ -79,8 +84,18 @@ if DEFINED APPVEYOR (
     if NOT DEFINED CUDA_ARCH_NAME set CUDA_ARCH_NAME=Auto
     :: Change to Debug to build Debug. This is only relevant for the Ninja generator the Visual Studio generator will generate both Debug and Release configs
     if NOT DEFINED CMAKE_CONFIG set CMAKE_CONFIG=Release
+    :: Set to 1 to use CUDNN
+    if NOT DEFINED USE_CUDNN set USE_CUDNN=0
     :: Set to 1 to use NCCL
     if NOT DEFINED USE_NCCL set USE_NCCL=0
+    :: Change to 1 to use OPENCV
+    if NOT DEFINED USE_OPENCV set USE_OPENCV=1
+    :: Change to 1 to use EVELDB
+    if NOT DEFINED USE_LEVELDB set USE_LEVELDB=1
+    :: Change to 1 to use LMDB
+    if NOT DEFINED USE_LMDB set USE_LMDB=1
+    :: Change to 1 to use HDF5
+    if NOT DEFINED USE_HDF5 set USE_HDF5=1
     :: Change to 1 to build a caffe.dll
     if NOT DEFINED CMAKE_BUILD_SHARED_LIBS set CMAKE_BUILD_SHARED_LIBS=0
     :: Change to 3 if using python 3.5 (only 2.7 and 3.5 are supported)
@@ -126,7 +141,12 @@ echo INFO: CMAKE_GENERATOR            = "!CMAKE_GENERATOR!"
 echo INFO: CPU_ONLY                   = !CPU_ONLY!
 echo INFO: CUDA_ARCH_NAME             = !CUDA_ARCH_NAME!
 echo INFO: CMAKE_CONFIG               = !CMAKE_CONFIG!
+echo INFO: USE_CUDNN                  = !USE_CUDNN!
 echo INFO: USE_NCCL                   = !USE_NCCL!
+echo INFO: USE_OPENCV                 = !USE_OPENCV!
+echo INFO: USE_LEVELDB                = !USE_LEVELDB!
+echo INFO: USE_LMDB                   = !USE_LMDB!
+echo INFO: USE_HDF5                   = !USE_HDF5!
 echo INFO: CMAKE_BUILD_SHARED_LIBS    = !CMAKE_BUILD_SHARED_LIBS!
 echo INFO: PYTHON_VERSION             = !PYTHON_VERSION!
 echo INFO: BUILD_PYTHON               = !BUILD_PYTHON!
@@ -167,7 +187,12 @@ cmake -G"!CMAKE_GENERATOR!" ^
       -DCPU_ONLY:BOOL=%CPU_ONLY% ^
       -DCOPY_PREREQUISITES:BOOL=1 ^
       -DINSTALL_PREREQUISITES:BOOL=1 ^
+      -DUSE_CUDNN:BOOL=!USE_CUDNN! ^
       -DUSE_NCCL:BOOL=!USE_NCCL! ^
+      -DUSE_OPENCV:BOOL=!USE_OPENCV! ^
+      -DUSE_LEVELDB:BOOL=!USE_LEVELDB! ^
+      -DUSE_LMDB:BOOL=!USE_LMDB! ^
+      -DUSE_HDF5:BOOL=!USE_HDF5! ^
       -DCUDA_ARCH_NAME:STRING=%CUDA_ARCH_NAME% ^
       "%~dp0\.."
 
