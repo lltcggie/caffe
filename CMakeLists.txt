@@ -121,6 +121,10 @@ if(HAVE_CUDA)
   set(Caffe_ALL_DEFINITIONS ${Caffe_DEFINITIONS})
   list(REMOVE_ITEM Caffe_ALL_DEFINITIONS PRIVATE PUBLIC)
   SET(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${Caffe_ALL_DEFINITIONS}")
+
+  if(MSVC)
+    SET(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler /wd4819")
+  endif()
 endif()
 
 # ---[ Subdirectories
