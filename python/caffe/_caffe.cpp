@@ -69,6 +69,7 @@ BP_GET_POINTER_T(AdaDeltaSolver, float);
 BP_GET_POINTER_T(AdamSolver, float);
 BP_GET_POINTER_T(NCCL, float);
 BP_GET_POINTER(Timer);
+BP_GET_POINTER(SolverParameter);
 
 #endif
 
