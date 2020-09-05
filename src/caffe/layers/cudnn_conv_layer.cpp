@@ -202,27 +202,27 @@ void CuDNNConvolutionLayer<Dtype>::Reshape(
 
 		  if (this->phase_ == TRAIN)
 		  {
-			  // choose backward algorithm for filter
-			  CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(handle_[0],
-				  bottom_descs_[i], top_descs_[i], conv_descs_[i], filter_desc_,
-				  CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
-				  workspace_limit_bytes, &bwd_filter_algo_[i]));
+			  //// choose backward algorithm for filter
+			  //CUDNN_CHECK(cudnnGetConvolutionBackwardFilterAlgorithm(handle_[0],
+				 // bottom_descs_[i], top_descs_[i], conv_descs_[i], filter_desc_,
+				 // CUDNN_CONVOLUTION_BWD_FILTER_SPECIFY_WORKSPACE_LIMIT,
+				 // workspace_limit_bytes, &bwd_filter_algo_[i]));
 
-			  // get workspace for backwards filter algorithm
-			  CUDNN_CHECK(cudnnGetConvolutionBackwardFilterWorkspaceSize(handle_[0],
-				  bottom_descs_[i], top_descs_[i], conv_descs_[i], filter_desc_,
-				  bwd_filter_algo_[i], &workspace_bwd_filter_sizes_[i]));
+			  //// get workspace for backwards filter algorithm
+			  //CUDNN_CHECK(cudnnGetConvolutionBackwardFilterWorkspaceSize(handle_[0],
+				 // bottom_descs_[i], top_descs_[i], conv_descs_[i], filter_desc_,
+				 // bwd_filter_algo_[i], &workspace_bwd_filter_sizes_[i]));
 
-			  // choose backward algo for data
-			  CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(handle_[0],
-				  filter_desc_, top_descs_[i], conv_descs_[i], bottom_descs_[i],
-				  CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT,
-				  workspace_limit_bytes, &bwd_data_algo_[i]));
+			  //// choose backward algo for data
+			  //CUDNN_CHECK(cudnnGetConvolutionBackwardDataAlgorithm(handle_[0],
+				 // filter_desc_, top_descs_[i], conv_descs_[i], bottom_descs_[i],
+				 // CUDNN_CONVOLUTION_BWD_DATA_SPECIFY_WORKSPACE_LIMIT,
+				 // workspace_limit_bytes, &bwd_data_algo_[i]));
 
-			  // get workspace size
-			  CUDNN_CHECK(cudnnGetConvolutionBackwardDataWorkspaceSize(handle_[0],
-				  filter_desc_, top_descs_[i], conv_descs_[i], bottom_descs_[i],
-				  bwd_data_algo_[i], &workspace_bwd_data_sizes_[i]));
+			  //// get workspace size
+			  //CUDNN_CHECK(cudnnGetConvolutionBackwardDataWorkspaceSize(handle_[0],
+				 // filter_desc_, top_descs_[i], conv_descs_[i], bottom_descs_[i],
+				 // bwd_data_algo_[i], &workspace_bwd_data_sizes_[i]));
 		  }
 	  }
 
